@@ -3,6 +3,8 @@ use quote::{format_ident, quote};
 use std::collections::HashMap;
 use syn::{parse_macro_input, AttributeArgs, DeriveInput, Lit, Meta, NestedMeta};
 
+const ON_MONTH_IN_SECONDS: u64 = 2663280;
+
 fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     let mut hashmap: HashMap<String, Lit> = HashMap::new();
 
@@ -36,8 +38,8 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 
         #[derive(Debug, Deserialize, Serialize)]
         #vis struct #guard_claim {
-            exp: i64,
-            iat: i64,
+            exp: u64,
+            iat: u64,
             user: #guard_type
         }
     };
@@ -50,16 +52,16 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     let exp = match hashmap.get("exp") {
         Some(exp_lit) => {
             if let Lit::Int(exp_lit_int) = exp_lit {
-                exp_lit_int.base10_digits().parse::<i64>().unwrap()
+                exp_lit_int.base10_digits().parse::<u64>().unwrap()
             } else {
-                -1i64
+                ON_MONTH_IN_SECONDS
             }
         }
-        None => -1i64,
+        None => ON_MONTH_IN_SECONDS,
     };
 
     quote! {
-        use ::jsonwebtoken::errors::Result;
+        use ::jsonwebtoken::errors::{Result, ErrorKind, Error};
         use ::jsonwebtoken::TokenData;
         use ::jsonwebtoken::{encode, Header, EncodingKey};
         use ::jsonwebtoken::{decode, Validation, DecodingKey};
@@ -79,17 +81,23 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
             }
 
             pub fn sign(user: #guard_type) -> String {
+                use ::std::time::{SystemTime, UNIX_EPOCH};
+                let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
                 let payload = #guard_claim {
-                    exp: #exp,
-                    iat: 10000000000,
+                    exp: #exp + now,
+                    iat: now,
                     user,
                 };
 
                 encode(&Header::default(), &payload, &EncodingKey::from_secret((#secret).as_bytes())).unwrap()
             }
 
-            pub fn decode(token: String) -> Result<TokenData<#guard_type>> {
-                decode::<#guard_type>(&token, &DecodingKey::from_secret((#secret).as_bytes()), &Validation::default())
+            pub fn decode(token: String) -> Result<#guard_claim> {
+                let result = decode::<#guard_claim>(&token, &DecodingKey::from_secret((#secret).as_bytes()), &Validation::default());
+                if let Ok(token_claim) = result {
+                    return Ok(token_claim.claims);
+                }
+                Err(Error::from(ErrorKind::InvalidToken))
             }
         }
 
@@ -103,13 +111,13 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                     if auth_str.starts_with("Bearer") {
                         let token = auth_str[6..auth_str.len()].trim();
                         if let Ok(token_data) = #guard_type::decode(token.to_string()) {
-                            return Outcome::Success(token_data.claims);
+                            return Outcome::Success(token_data.user);
                         }
                     }
                 }
 
                 Outcome::Failure((
-                    Status::BadRequest,
+                    Status::Unauthorized,
                     status::Custom(
                         Status::Unauthorized,
                         String::from("401 Unauthorized"),

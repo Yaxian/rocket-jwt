@@ -1,3 +1,5 @@
+// copy from rocket_contrib
+
 //! Ensures Rocket isn't compiled with an incompatible version of Rust.
 
 extern crate yansi;
@@ -23,7 +25,6 @@ fn main() {
             err!(version, date, "Rocket requires a 'dev' or 'nightly' version of rustc.");
 
             eprint!("{}", Blue.paint("See the getting started guide ("));
-            eprint!("https://rocket.rs/v0.5/guide/getting-started/");
             eprintln!("{}", Blue.paint(") for more information."));
 
             panic!("Aborting compilation due to incompatible compiler.")

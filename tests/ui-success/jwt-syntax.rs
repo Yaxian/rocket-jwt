@@ -11,11 +11,12 @@ struct UserClaim {
 // }
 
 fn main() {
-  UserClaim::fairing();
-
   let claim = UserClaim {
     id: String::from("123"),
   };
 
-  UserClaim::decode(UserClaim::sign(claim));
+  let jwt_claim = UserClaim::decode(UserClaim::sign(claim));
+  if let Ok(jwt_claim) = jwt_claim {
+    assert_eq!(jwt_claim.user.id, String::from("123"));
+  }
 }
