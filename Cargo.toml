@@ -8,6 +8,7 @@ readme = "./README.md"
 license = "MIT"
 keywords = ["rocket", "authorization", "jwt", "jswonwebtoken"]
 categories = ["parser-implementations", "web-programming"]
+description = "jwt authorization for rocket"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
