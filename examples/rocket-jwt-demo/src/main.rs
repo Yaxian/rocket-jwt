@@ -5,8 +5,15 @@ extern crate rocket;
 
 use rocket_jwt::jwt;
 
-#[jwt("secret")]
+static SECRET_KEY: &str = "secret_key";
+
+#[jwt(SECRET_KEY)]
 pub struct UserClaim {
+    id: String,
+}
+
+#[jwt("secret_2", exp = 10)]
+pub struct UserClaim2 {
     id: String,
 }
 
@@ -20,7 +27,7 @@ fn index() -> String {
     token
 }
 
-#[get("/uer_id")]
+#[get("/user_id")]
 fn get_uer_id_from_jwt(user: UserClaim) -> String {
     format!("user id is {}", user.id)
 }

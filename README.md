@@ -11,9 +11,15 @@ extern crate rocket;
 
 use rocket_jwt::jwt;
 
-#[jwt("secret")]
+static SECRET_KEY: &str = "secret_key";
+#[jwt(SECRET_KEY)]
 pub struct UserClaim {
     id: String,
+}
+
+#[jwt("secret_2", exp = 100)]
+pub struct UserClaim2 {
+    id: String
 }
 
 #[get("/")]
@@ -46,7 +52,7 @@ fn main() {
 | attribute | type | description | default |
 |----------|------|-------------|---|
 |  | String | jwt secret key, required | |
-| exp | Int | token expire in seconds | 2663280 *(one month)* |
+| exp | Int | token expire in seconds | 2592000 *(one month)* |
 
 
 
@@ -65,7 +71,7 @@ curl http://localhost:8000
 2. use `jwt` token
 
 ```
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8000/uer_id
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8000/user_id
 ```
 
 ## License
