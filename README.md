@@ -32,7 +32,7 @@ fn index() -> String {
     token
 }
 
-#[get("/uer_id")]
+#[get("/user_id")]
 fn get_uer_id_from_jwt(user: UserClaim) -> String {
     format!("user id is {}", user.id)
 }
