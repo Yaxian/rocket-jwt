@@ -7,13 +7,8 @@ use rocket_jwt::jwt;
 
 static SECRET_KEY: &str = "secret_key";
 
-#[jwt(SECRET_KEY)]
+#[jwt(SECRET_KEY, exp = 10, leeway = 10)]
 pub struct UserClaim {
-    id: String,
-}
-
-#[jwt("secret_2", exp = 10)]
-pub struct UserClaim2 {
     id: String,
 }
 

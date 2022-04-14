@@ -6,7 +6,21 @@ use syn::{
     NestedMeta,
 };
 
-const ON_MONTH_IN_SECONDS: u64 = 2592_000;
+const ONE_MONTH_IN_SECONDS: u64 = 2592_000;
+const ONE_MINUTE_IN_SECONDS: u64 = 60;
+
+fn get_lit_int(lit: Option<&Lit>, default_value: u64) -> u64 {
+    match lit {
+        Some(exp_lit) => {
+            if let Lit::Int(exp_lit_int) = exp_lit {
+                exp_lit_int.base10_digits().parse::<u64>().unwrap()
+            } else {
+                default_value
+            }
+        }
+        None => default_value,
+    }
+}
 
 fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     let mut attr_into_iter = attr.into_iter();
@@ -41,7 +55,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     }
 
     let mut hashmap: HashMap<String, Lit> = HashMap::new();
-    for attr_iter in attr_into_iter.next() {
+    for attr_iter in attr_into_iter.into_iter() {
         if let NestedMeta::Meta(meta) = attr_iter {
             if let Meta::NameValue(namevalue) = meta {
                 let name = namevalue.path;
@@ -52,16 +66,8 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
         }
     }
 
-    let exp = match hashmap.get("exp") {
-        Some(exp_lit) => {
-            if let Lit::Int(exp_lit_int) = exp_lit {
-                exp_lit_int.base10_digits().parse::<u64>().unwrap()
-            } else {
-                ON_MONTH_IN_SECONDS
-            }
-        }
-        None => ON_MONTH_IN_SECONDS,
-    };
+    let exp = get_lit_int(hashmap.get("exp"), ONE_MONTH_IN_SECONDS);
+    let leeway = get_lit_int(hashmap.get("leeway"), ONE_MINUTE_IN_SECONDS);
 
     // handle input
     let guard_type = &input.ident;
@@ -72,11 +78,6 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     let jwt = quote!(::jsonwebtoken);
     #[allow(non_snake_case)]
     let Result = quote!(::jsonwebtoken::errors::Result);
-    #[allow(non_snake_case)]
-    let Error = quote!(::jsonwebtoken::errors::Error);
-    #[allow(non_snake_case)]
-    let ErrorKind = quote!(::jsonwebtoken::errors::ErrorKind);
-
     #[allow(non_snake_case)]
     let Status = quote!(::rocket::http::Status);
     #[allow(non_snake_case)]
@@ -120,11 +121,14 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
             }
 
             pub fn decode(token: String) -> #Result<#guard_claim> {
-                let result = #jwt::decode::<#guard_claim>(&token, &#jwt::DecodingKey::from_secret((#secrete_value).as_bytes()), &#jwt::Validation::default());
-                if let Ok(token_claim) = result {
-                    return Ok(token_claim.claims);
+                let mut validation = #jwt::Validation::default();
+                validation.leeway = #leeway;
+
+                let result = #jwt::decode::<#guard_claim>(&token, &#jwt::DecodingKey::from_secret((#secrete_value).as_bytes()), &validation);
+                match result {
+                    Ok(token_claim) => Ok(token_claim.claims),
+                    Err(err) => Err(err),
                 }
-                Err(#Error::from(#ErrorKind::InvalidToken))
             }
         }
 
@@ -136,8 +140,19 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                     let auth_str = auth_header.to_string();
                     if auth_str.starts_with("Bearer") {
                         let token = auth_str[6..auth_str.len()].trim();
-                        if let Ok(token_data) = #guard_type::decode(token.to_string()) {
-                            return #Outcome::Success(token_data.user);
+                        match #guard_type::decode(token.to_string()) {
+                            Ok(token_data) => {
+                                return #Outcome::Success(token_data.user);
+                            },
+                            Err(err) => {
+                                return #Outcome::Failure((
+                                    #Status::Unauthorized,
+                                    #response::status::Custom(
+                                        #Status::Unauthorized,
+                                        err.to_string(),
+                                    ),
+                                ));
+                            },
                         }
                     }
                 }
@@ -146,7 +161,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                     #Status::Unauthorized,
                     #response::status::Custom(
                         #Status::Unauthorized,
-                        String::from("401 Unauthorized"),
+                        String::from("EmptySignature"),
                     ),
                 ))
             }

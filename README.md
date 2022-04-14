@@ -52,7 +52,8 @@ fn main() {
 | attribute | type | description | default |
 |----------|------|-------------|---|
 |  | String | jwt secret key, required | |
-| exp | Int | token expire in seconds | 2592000 *(one month)* |
+| exp | Int | token expire after seconds | 2592000 *(one month)* |
+| leeway | Int | token expire leeway in seconds | 60 *(one minute)* |
 
 
 
