@@ -22,6 +22,19 @@ fn get_lit_int(lit: Option<&Lit>, default_value: u64) -> u64 {
     }
 }
 
+fn get_lit_str(lit: Option<&Lit>, default_value: String) -> String {
+    match lit {
+        Some(exp_lit) => {
+            if let Lit::Str(exp_lit_str) = exp_lit {
+                exp_lit_str.value()
+            } else {
+                default_value
+            }
+        }
+        None => default_value,
+    }
+}
+
 fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     let mut attr_into_iter = attr.into_iter();
 
@@ -68,11 +81,13 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 
     let exp = get_lit_int(hashmap.get("exp"), ONE_MONTH_IN_SECONDS);
     let leeway = get_lit_int(hashmap.get("leeway"), ONE_MINUTE_IN_SECONDS);
+    let cookie_key = get_lit_str(hashmap.get("cookie"), "".to_string());
+    let query_key = get_lit_str(hashmap.get("query"), "".to_string());
 
     // handle input
     let guard_type = &input.ident;
     let vis = &input.vis;
-    let fairing_name = format!("'{}' JwtFairing", "Test");
+    let fairing_name = format!("'{}' JwtFairing", &guard_type.to_string());
     let guard_claim = format_ident!("{}JwtClaim", &guard_type);
 
     let jwt = quote!(::jsonwebtoken);
@@ -136,8 +151,31 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
             type Error = #response::status::Custom<String>;
 
             fn from_request(request: &'a #request::Request<'r>,) -> #request::Outcome<Self, #response::status::Custom<String>> {
-                if let Some(auth_header) = request.headers().get_one("Authorization") {
-                    let auth_str = auth_header.to_string();
+                let mut auth_str: Option<String> = None;
+                if (#cookie_key) != "" {
+                    auth_str = match request.cookies().get(#cookie_key) {
+                        None => None,
+                        Some(t) => Some(t.value().to_string()),
+                    };
+                } else if (#query_key) != "" {
+                    auth_str = match request.get_query_value::<String>(#query_key) {
+                        None => None,
+                        Some(t) => match t {
+                            Ok(r) => Some(r),
+                            Err(_) => None,
+                        }
+                    }
+                } else {
+                    auth_str = match auth_str {
+                        Some(auth_str) => Some(auth_str),
+                        None => match request.headers().get_one("Authorization") {
+                            Some(s) => Some(s.to_string()),
+                            None => None,
+                        }
+                    };
+                };
+
+                if let Some(auth_str) = auth_str {
                     if auth_str.starts_with("Bearer") {
                         let token = auth_str[6..auth_str.len()].trim();
                         match #guard_type::decode(token.to_string()) {
@@ -225,7 +263,21 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 ///         .launch();
 /// }
 /// ```
+/// token default comes from request.header, if want get from cookie or query, user
 ///
+/// ```rust
+/// #[jwt("secret", cookie = "token")]
+/// pub struct UserClaim {
+///     id: String,
+/// }
+/// ```
+///
+/// /// ```rust
+/// #[jwt("secret", query = "token")]
+/// pub struct UserClaim {
+///     id: String,
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn jwt(attr: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

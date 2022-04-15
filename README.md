@@ -17,8 +17,25 @@ pub struct UserClaim {
     id: String,
 }
 
-#[jwt("secret_2", exp = 100)]
-pub struct UserClaim2 {
+#[jwt("secret", exp = 100)]
+pub struct UserClaimExp {
+    id: String
+}
+
+#[jwt("secret", leeway = 10)]
+pub struct UserClaimLeeway {
+    id: String
+}
+
+// get token from cookie, key is `token`
+#[jwt("secret", cookie = "token")]
+pub struct UserClaimCookie {
+    id: String
+}
+
+// get token from request query, key is `token`
+#[jwt("secret", query = "token")]
+pub struct UserClaimQuery {
     id: String
 }
 
@@ -54,7 +71,8 @@ fn main() {
 |  | String | jwt secret key, required | |
 | exp | Int | token expire after seconds | 2592000 *(one month)* |
 | leeway | Int | token expire leeway in seconds | 60 *(one minute)* |
-
+| cookie | String | get token from cookie key, optional | |
+| query | String | get token from query key, optional | |
 
 
 ### Run example
