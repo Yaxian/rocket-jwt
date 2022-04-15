@@ -102,6 +102,8 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     let std_time = quote!(::std::time);
     let serder = quote!(::serde);
 
+    let async_trait = quote!(#[::rocket::async_trait]);
+
     let guard_types = quote! {
         #[derive(Debug, #serder::Deserialize, #serder::Serialize)]
         #input
@@ -119,8 +121,8 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 
         impl #guard_type {
             pub fn fairing() -> impl ::rocket::fairing::Fairing {
-                ::rocket::fairing::AdHoc::on_attach(#fairing_name, |rocket| {
-                    Ok(rocket)
+                ::rocket::fairing::AdHoc::on_ignite(#fairing_name, |rocket| async {
+                    rocket
                 })
             }
 
@@ -147,10 +149,12 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
             }
         }
 
-        impl<'a, 'r> #request::FromRequest<'a, 'r> for #guard_type {
+        #async_trait
+        impl<'r> #request::FromRequest<'r> for #guard_type {
             type Error = #response::status::Custom<String>;
+            // type Error = ();
 
-            fn from_request(request: &'a #request::Request<'r>,) -> #request::Outcome<Self, #response::status::Custom<String>> {
+            async fn from_request(request: &'r #request::Request<'_>,) -> #request::Outcome<Self, #response::status::Custom<String>> {
                 let mut auth_str: Option<String> = None;
                 if (#cookie_key) != "" {
                     auth_str = match request.cookies().get(#cookie_key) {
@@ -158,7 +162,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                         Some(t) => Some(t.value().to_string()),
                     };
                 } else if (#query_key) != "" {
-                    auth_str = match request.get_query_value::<String>(#query_key) {
+                    auth_str = match request.query_value::<String>(#query_key) {
                         None => None,
                         Some(t) => match t {
                             Ok(r) => Some(r),
@@ -191,10 +195,14 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                                     ),
                                 ));
                             },
+                            // Err(_) => {
+                            //     return #Outcome::Forward(());
+                            // },
                         }
                     }
                 }
 
+                // #Outcome::Forward(())
                 #Outcome::Failure((
                     #Status::Unauthorized,
                     #response::status::Custom(

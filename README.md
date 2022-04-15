@@ -1,6 +1,8 @@
 # rocket-jwt
 
-for rocket@0.4
+jwt authorization for rocket@0.5.
+
+rocket@0.4 see (v0.4)[https://github.com/Yaxian/rocket-jwt/tree/v0.4].
 
 
 ```rust

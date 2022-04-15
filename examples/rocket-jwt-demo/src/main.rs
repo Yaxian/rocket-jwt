@@ -27,9 +27,7 @@ fn get_uer_id_from_jwt(user: UserClaim) -> String {
     format!("user id is {}", user.id)
 }
 
-fn main() {
-    rocket::ignite()
-        .attach(UserClaim::fairing())
-        .mount("/", routes![index, get_uer_id_from_jwt])
-        .launch();
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/", routes![index, get_uer_id_from_jwt])
 }
