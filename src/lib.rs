@@ -218,7 +218,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 ///
 /// ```rust
 /// // expire default in 2592_000s
-/// [jwt("secret")]
+/// #[rocket_jwt::jwt("secret")]
 /// struct User { id: String }
 /// ```
 ///
@@ -226,7 +226,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 ///
 /// ```rust
 /// // expire in 10s
-/// [jwt("secret", exp = 10)]
+/// #[rocket_jwt::jwt("secret", exp = 10)]
 /// struct User { id: String }
 /// ```
 ///
@@ -262,7 +262,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 /// }
 ///
 /// fn main() {
-///     rocket::ignite()
+///     rocket::build()
 ///         .attach(UserClaim::fairing())
 ///         .mount("/", routes![index, get_uer_id_from_jwt])
 ///         .launch();
@@ -271,7 +271,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 /// token default comes from request.header, if want get from cookie or query, user
 ///
 /// ```rust
-/// #[jwt("secret", cookie = "token")]
+/// #[rocket_jwt::jwt("secret", cookie = "token")]
 /// pub struct UserClaim {
 ///     id: String,
 /// }
