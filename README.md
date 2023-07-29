@@ -6,8 +6,6 @@ rocket@0.4 see [v0.4](https://github.com/Yaxian/rocket-jwt/tree/v0.4).
 
 
 ```rust
-#![feature(proc_macro_hygiene, decl_macro)]
-
 #[macro_use]
 extern crate rocket;
 

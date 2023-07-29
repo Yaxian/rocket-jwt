@@ -235,7 +235,6 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 /// ## Example
 /// ---
 /// ```rust
-/// #![feature(proc_macro_hygiene, decl_macro)]
 
 /// #[macro_use]
 /// extern crate rocket;
