@@ -13,7 +13,7 @@ pub struct UserClaim {
 #[get("/")]
 fn index() -> String {
     let user_claim = UserClaim {
-        id: format!("hello_rocket_jwt"),
+        id: "hello_rocket_jwt".to_string(),
     };
     let token = UserClaim::sign(user_claim);
     println!("{:#?}", UserClaim::decode(token.clone()));

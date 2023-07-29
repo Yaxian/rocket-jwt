@@ -6,7 +6,7 @@ use syn::{
     NestedMeta,
 };
 
-const ONE_MONTH_IN_SECONDS: u64 = 2592_000;
+const ONE_MONTH_IN_SECONDS: u64 = 2_592_000;
 const ONE_MINUTE_IN_SECONDS: u64 = 60;
 
 fn get_lit_int(lit: Option<&Lit>, default_value: u64) -> u64 {
@@ -68,14 +68,12 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     }
 
     let mut hashmap: HashMap<String, Lit> = HashMap::new();
-    for attr_iter in attr_into_iter.into_iter() {
-        if let NestedMeta::Meta(meta) = attr_iter {
-            if let Meta::NameValue(namevalue) = meta {
-                let name = namevalue.path;
-                let value = namevalue.lit;
-                let name = name.segments[0].ident.to_string();
-                hashmap.insert(name, value);
-            }
+    for attr_iter in attr_into_iter {
+        if let NestedMeta::Meta(Meta::NameValue(namevalue)) = attr_iter {
+            let name = namevalue.path;
+            let value = namevalue.lit;
+            let name = name.segments[0].ident.to_string();
+            hashmap.insert(name, value);
         }
     }
 
