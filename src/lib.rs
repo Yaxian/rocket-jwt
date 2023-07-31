@@ -6,7 +6,7 @@ use syn::{
     NestedMeta,
 };
 
-const ONE_MONTH_IN_SECONDS: u64 = 2592_000;
+const ONE_MONTH_IN_SECONDS: u64 = 2_592_000;
 const ONE_MINUTE_IN_SECONDS: u64 = 60;
 
 fn get_lit_int(lit: Option<&Lit>, default_value: u64) -> u64 {
@@ -68,14 +68,12 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
     }
 
     let mut hashmap: HashMap<String, Lit> = HashMap::new();
-    for attr_iter in attr_into_iter.into_iter() {
-        if let NestedMeta::Meta(meta) = attr_iter {
-            if let Meta::NameValue(namevalue) = meta {
-                let name = namevalue.path;
-                let value = namevalue.lit;
-                let name = name.segments[0].ident.to_string();
-                hashmap.insert(name, value);
-            }
+    for attr_iter in attr_into_iter {
+        if let NestedMeta::Meta(Meta::NameValue(namevalue)) = attr_iter {
+            let name = namevalue.path;
+            let value = namevalue.lit;
+            let name = name.segments[0].ident.to_string();
+            hashmap.insert(name, value);
         }
     }
 
@@ -220,7 +218,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 ///
 /// ```rust
 /// // expire default in 2592_000s
-/// [jwt("secret")]
+/// #[rocket_jwt::jwt("secret")]
 /// struct User { id: String }
 /// ```
 ///
@@ -228,14 +226,13 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 ///
 /// ```rust
 /// // expire in 10s
-/// [jwt("secret", exp = 10)]
+/// #[rocket_jwt::jwt("secret", exp = 10)]
 /// struct User { id: String }
 /// ```
 ///
 /// ## Example
 /// ---
 /// ```rust
-/// #![feature(proc_macro_hygiene, decl_macro)]
 
 /// #[macro_use]
 /// extern crate rocket;
@@ -265,7 +262,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 /// }
 ///
 /// fn main() {
-///     rocket::ignite()
+///     rocket::build()
 ///         .attach(UserClaim::fairing())
 ///         .mount("/", routes![index, get_uer_id_from_jwt])
 ///         .launch();
@@ -274,7 +271,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 /// token default comes from request.header, if want get from cookie or query, user
 ///
 /// ```rust
-/// #[jwt("secret", cookie = "token")]
+/// #[rocket_jwt::jwt("secret", cookie = "token")]
 /// pub struct UserClaim {
 ///     id: String,
 /// }
