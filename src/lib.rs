@@ -185,7 +185,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                                 return #Outcome::Success(token_data.user);
                             },
                             Err(err) => {
-                                return #Outcome::Failure((
+                                return #Outcome::Error((
                                     #Status::Unauthorized,
                                     #response::status::Custom(
                                         #Status::Unauthorized,
@@ -201,7 +201,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
                 }
 
                 // #Outcome::Forward(())
-                #Outcome::Failure((
+                #Outcome::Error((
                     #Status::Unauthorized,
                     #response::status::Custom(
                         #Status::Unauthorized,
