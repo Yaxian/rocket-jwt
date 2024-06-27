@@ -277,7 +277,7 @@ fn parse_invocation(attr: Vec<NestedMeta>, input: DeriveInput) -> TokenStream {
 /// }
 /// ```
 ///
-/// /// ```rust
+/// ```rust
 /// #[jwt("secret", query = "token")]
 /// pub struct UserClaim {
 ///     id: String,
