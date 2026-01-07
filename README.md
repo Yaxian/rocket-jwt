@@ -4,7 +4,6 @@ jwt authorization for rocket@0.5.
 
 rocket@0.4 see [v0.4](https://github.com/Yaxian/rocket-jwt/tree/v0.4).
 
-
 ```rust
 #[macro_use]
 extern crate rocket;
@@ -61,17 +60,29 @@ fn rocket() -> _ {
 
 ```
 
+### Important
+
+`token` should startsWith `Bearer `. see [#8](https://github.com/Yaxian/rocket-jwt/issues/8)
+
+> Cookie: auth=Bearer MY_JWT_TOKEN
+
+or
+
+> /api/endpoint?jwt=Bearer%20MY_JWT_TOKEN
+
+or
+
+> Authorization: Bearer MY_JWT_TOKEN
 
 ### API
 
-| attribute | type | description | default |
-|----------|------|-------------|---|
-|  | String | jwt secret key, required | |
-| exp | Int | token expire after seconds | 2592000 *(one month)* |
-| leeway | Int | token expire leeway in seconds | 60 *(one minute)* |
-| cookie | String | get token from cookie key, optional | |
-| query | String | get token from query key, optional | |
-
+| attribute | type   | description                         | default               |
+| --------- | ------ | ----------------------------------- | --------------------- |
+|           | String | jwt secret key, required            |                       |
+| exp       | Int    | token expire after seconds          | 2592000 _(one month)_ |
+| leeway    | Int    | token expire leeway in seconds      | 60 _(one minute)_     |
+| cookie    | String | get token from cookie key, optional |                       |
+| query     | String | get token from query key, optional  |                       |
 
 ### Run example
 
